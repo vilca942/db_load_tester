@@ -1,0 +1,60 @@
+name: .lint-and-test
+
+on:
+  workflow_call:
+    inputs:
+      POETRY_VERSION:
+        required: false
+        type: string
+        default: 2.1.2
+      PYTHON_VERSION:
+        required: false
+        type: string
+        default: "3.13"
+
+concurrency:
+  group: ${{ github.workflow }}/${{ github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: "read"
+  id-token: "write"
+
+jobs:
+  lint:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup python and poetry
+        uses: ./.github/actions/setup-python-poetry
+        with:
+          POETRY_VERSION: ${{ inputs.POETRY_VERSION }}
+          PYTHON_VERSION: ${{ inputs.PYTHON_VERSION }}
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.1
+
+  test:
+    runs-on: ubuntu-22.04
+
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup python and poetry
+        uses: ./.github/actions/setup-python-poetry
+        with:
+          POETRY_VERSION: ${{ inputs.POETRY_VERSION }}
+          PYTHON_VERSION: ${{ inputs.PYTHON_VERSION }}
+
+      - name: Start docker compose
+        run: docker compose -f docker-compose.yml up -d && sleep 5 && docker compose -f docker-compose.yml ps;
+
+      - name: Run pytest
+        run: poetry run pytest tests
