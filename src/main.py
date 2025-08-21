@@ -6,7 +6,7 @@ from src.models import Base
 
 
 def create_app() -> FastAPI:
-    """init fastapi app"""
+    """init fastapi app fake commit"""
 
     app: FastAPI = FastAPI(
         title="database-load-tester",
